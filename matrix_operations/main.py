@@ -1,5 +1,5 @@
 import numpy as np
-with open('matrix_operations/input.txt', 'r') as f:
+with open('./input.txt', 'r') as f:
   input_data = f.read()
 lines = input_data.splitlines()
 matrices = {}
@@ -19,8 +19,6 @@ for line in lines:
     elif "+" in cleaned_line or "-" in cleaned_line or "*" in cleaned_line or "/" in cleaned_line:
       operations.append(cleaned_line)
 
-
-#print(matrices["A"])
 a = np.array(matrices['A'], dtype=int)
 b = np.array(matrices['B'], dtype=int)
 c = np.array(matrices['C'], dtype=int)
@@ -32,15 +30,6 @@ h = np.array(matrices['H'], dtype=int)
 i = np.array(matrices['I'], dtype=int)
 j = np.array(matrices['J'], dtype=int)
 
-
-"""
-result1 = str((a+b).tolist())
-print("A + B")
-print(result1)
-print(str((b+b+a).tolist()))
-print(str((c+d+d+c).tolist()))
-print(str(np.add(np.dot(e,f), np.dot(i,j)).tolist()))
-"""
 def print_matrix(matrix):
     for row in matrix:
         print(' '.join(map(str, row)))
