@@ -35,7 +35,7 @@ def read_maze(filename):
 
 
 # Bemeneti fájl neve
-filename = 'maze_solver/input.txt'
+filename = './input.txt'
 
 # Labirintusok beolvasása
 mazes, start_row, end_row, maze_indicators = read_maze(filename)
