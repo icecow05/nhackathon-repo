@@ -143,6 +143,7 @@ for maze_indicator in maze_indicators:
         # Print maze indicator and the shortest path
         print(maze_indicator)
         print(f"S {' '.join(['L' if move == (0, -1) else 'R' if move == (0, 1) else 'U' if move == (-1, 0) else 'D' for move in shortest_path])} G")
+        print()
         #Uncomment the line below if you want to print out the maze with the shortest path marked :)
         #print_solution(maze, start, end, shortest_path)
     else:
