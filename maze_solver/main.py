@@ -1,18 +1,24 @@
-import queue
-import time
+import heapq
+
 def read_maze(filename):
+    # Read maze from the input file
     with open(filename, 'r') as file:
         lines = file.readlines()
+
     mazes = {}
+    start_rows = {}
+    end_rows = {}
+    maze_indicators = []
+
     current_maze = None
     current_grid = []
-    start_rows = {}
-    maze_indicators = []
-    end_rows = {}
+
+    # Parse each line of the input file
     for line in lines:
         line = line.strip()
 
         if line:
+            # Identify maze indicators (alphabetic lines)
             if line.isalpha():
                 current_maze = line
                 current_grid = []
@@ -21,137 +27,123 @@ def read_maze(filename):
                 end_rows[current_maze] = []
                 index = 0
             else:
-                row = list(line.split())#.split()
+                # Parse maze rows and identify start ("S") and goal ("G") positions
+                row = list(line.split())
                 current_grid.append(row)
                 index += 1
                 if "S" in row:
-                    start_rows[current_maze].append(index-1)
+                    start_rows[current_maze].append(index - 1)
                 if "G" in row:
-                    end_rows[current_maze].append(index-1)
-                    
+                    end_rows[current_maze].append(index - 1)
+
         if current_maze and current_grid:
             mazes[current_maze] = current_grid
+
     return mazes, start_rows, end_rows, maze_indicators
 
+def dijkstra(maze, start, end):
+    # Initialize matrix to store distances from the start to each cell
+    rows, cols = len(maze), len(maze[0])
+    distances = [[float('inf')] * cols for _ in range(rows)]
+    distances[start[0]][start[1]] = 0
 
-# Bemeneti fájl neve
+    # Priority queue storing nodes with distance and coordinates
+    heap = [(0, start)]
+
+    # Main loop for exploring nodes
+    while heap:
+        current_dist, current_node = heapq.heappop(heap)
+
+        # Check if the current node is the goal
+        if current_node == end:
+            return distances[end[0]][end[1]]
+
+        # Explore possible moves: right, down, left, up
+        for move in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
+            new_node = (current_node[0] + move[0], current_node[1] + move[1])
+
+            # Check if the new node is within maze bounds and not blocked
+            if 0 <= new_node[0] < rows and 0 <= new_node[1] < cols and maze[new_node[0]][new_node[1]] != "#":
+                new_dist = current_dist + 1
+
+                # Update distance for the new node
+                if new_dist < distances[new_node[0]][new_node[1]]:
+                    distances[new_node[0]][new_node[1]] = new_dist
+                    heapq.heappush(heap, (new_dist, new_node))
+
+    # If the goal is not reached, return infinity
+    return float('inf')
+
+def find_shortest_path(maze, start, end):
+    # Initialize matrix to store distances from the start to each cell
+    rows, cols = len(maze), len(maze[0])
+    distances = [[float('inf')] * cols for _ in range(rows)]
+    distances[start[0]][start[1]] = 0
+
+    # Priority queue storing nodes with distance and path
+    heap = [(0, start, [])]
+
+    # Main loop for exploring nodes
+    while heap:
+        current_dist, current_node, current_path = heapq.heappop(heap)
+
+        # Goal check
+        if current_node == end:
+            return current_path
+
+        # Explore possible moves: right, down, left, up
+        for move in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
+            new_node = (current_node[0] + move[0], current_node[1] + move[1])
+
+            # Check if the new node is within maze bounds and not blocked
+            if 0 <= new_node[0] < rows and 0 <= new_node[1] < cols and maze[new_node[0]][new_node[1]] != "#":
+                new_dist = current_dist + 1
+
+                # Update distance and path for the new node
+                if new_dist < distances[new_node[0]][new_node[1]]:
+                    distances[new_node[0]][new_node[1]] = new_dist
+                    new_path = current_path + [move]
+
+                    # Add new nodes to the heap for further exploration
+                    heapq.heappush(heap, (new_dist, new_node, new_path))
+
+    # If the goal is not reached, return an empty path
+    return []
+
+
+def print_solution(maze, start, end, path):
+    # Print the maze with the marked shortest path and print the shortest path
+    for move in path:
+        start = (start[0] + move[0], start[1] + move[1])
+        maze[start[0]][start[1]] = '*'
+
+    for row in maze:
+        print(' '.join(row))
+    print()
+
+# Input file name
 filename = './input.txt'
 
-# Labirintusok beolvasása
-mazes, start_row, end_row, maze_indicators = read_maze(filename)
-#print(mazes["A"])
-# Az 'A' labirintus kiíratása példaként
+# Read mazes from the input file
+mazes, start_rows, end_rows, maze_indicators = read_maze(filename)
 
-#def display_maze(maze):
-#    for row in maze:
-#        print(''.join(row))
-#    print()
+# Iterate through mazes
+for maze_indicator in maze_indicators:
+    maze = mazes[maze_indicator]
+    start_row = start_rows[maze_indicator][0]
+    end_row = end_rows[maze_indicator][0]
 
-#print("A")
-#display_maze(mazes['A'])
-#display_maze(mazes['B'])
-#display_maze(mazes['C'])
-#print(start_row[maze_indicators[mazecounter][0]], end_row)
-def printMaze(maze, mazecounter, path=""):
-    #print(maze[start_row["A"][0]])
-    start = None
-    for x, pos in enumerate(maze[start_row[maze_indicators[mazecounter]][0]]): # "A" helyett "B C D" is lehet és 0 helyett n(mazes) darabú szám
-        if pos == "S":
-            start = x
-    i = start
-    j = start_row[maze_indicators[mazecounter]][0]
-    pos = set()
-    for move in path:
-        if move == "L":
-            i -= 1
-        elif move == "R":
-            i += 1
-        elif move == "U":
-            j -= 1
-        elif move == "D":
-            j += 1
-        pos.add((j, i))
+    start = (start_row, maze[start_row].index("S"))
+    end = (end_row, maze[end_row].index("G"))
+
+    # Find the shortest path for each maze
+    shortest_path = find_shortest_path(maze, start, end)
     
-    for j, row in enumerate(maze):
-        for i, col in enumerate(row):
-            if (j, i) in pos:
-                print("* ", end="")
-            else:
-                print(col + " ", end="")
-        print()
-
-def valid(maze, moves, start_row):
-    for x, pos in enumerate(maze[start_row[maze_indicators[mazecounter]][0]]):
-        if pos == "S":
-            start = x
-    i = start
-    j = start_row[maze_indicators[mazecounter]][0]
-    for move in moves:
-        if move == "L":
-            i -= 1
-        elif move == "R":
-            i += 1
-        elif move == "U":
-            j -= 1
-        elif move == "D":
-            j += 1
-        if not(0 <= i < len(maze[0]) and 0 <= j < len(maze)):
-            return False
-        elif (maze[j][i] == "#"):
-            return False
-    
-    return True
-def findEnd(maze, moves, start_row):
-    for x, pos in enumerate(maze[start_row[maze_indicators[mazecounter]][0]]):
-        if pos == "S":
-            start = x
-            i = start 
-    j = start_row[maze_indicators[mazecounter]][0]
-    for move in moves:
-        if move == "L":
-            i -= 1
-        elif move == "R":
-            i += 1
-        elif move == "U":
-            j -= 1
-        elif move == "D":
-            j += 1
-    if maze[j][i] == "G":
-        #print(maze)
-        print(f"S {' '.join(moves)} G\n")
-        #printMaze(maze, moves)
-        return True
-    
-    return False
-
-#print(maze[start_row["A"][0]])
-mazecounter = -1 # -1 volt
-#print(start_row[maze_indicators[mazecounter]][0])
-#print(maze_indicators)
-#print(len(mazes)-1)
-#print(start_row)
-#print(maze_indicators[mazecounter])
-#print(maze_indicators[mazecounter])
-for i in range(len(mazes)):
-   mazecounter += 1
-   maze = mazes[maze_indicators[mazecounter]]
-   #print(maze[start_row[maze_indicators[mazecounter]][mazecounter]])
-   #print(maze[start_row[maze_indicators[mazecounter]][0]])
-   print(maze_indicators[mazecounter])
-   #print(maze_indicators[mazecounter]
-   nums = queue.Queue()
-   nums.put("")
-   add = ""
-   #print(mazes[maze_indicators[mazecounter]])
-   while not findEnd(maze, add, start_row): 
-    add = nums.get()
-    #print(add)
-    for j in ["L", "R", "U", "D"]:
-        put = add + j
-        if valid(maze, put, start_row):
-            if len(put) < 3:
-                nums.put(put)
-            else:
-                if put[-1] == "L" and put[-2] != "R" or put[-1] == "R" and put[-2] != "L" or put[-1] == "U" and put[-2] != "D" or put[-1] == "D" and put[-2] != "U":
-                    nums.put(put)
-                    #printMaze(maze, mazecounter)
+    if shortest_path:
+        # Print maze indicator and the shortest path
+        print(maze_indicator)
+        print(f"S {' '.join(['L' if move == (0, -1) else 'R' if move == (0, 1) else 'U' if move == (-1, 0) else 'D' for move in shortest_path])} G")
+        #Uncomment the line below if you want to print out the maze with the shortest path marked :)
+        #print_solution(maze, start, end, shortest_path)
+    else:
+        print(f"No solution found for maze {maze_indicator}")
